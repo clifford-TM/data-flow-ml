@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Administração de Banco de Dados</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='admin_script.js') }}" defer></script>
+</head>
+<body>
+  <h1>Administração de Banco de Dados</h1>
+
+  <h2>Gerar Dados de Teste</h2>
+  <button id="gerar-dados-btn">Gerar Dados</button>
+
+  <!-- Modal de gerar dados -->
+<div id="senha-modal-gerar" class="modal">
+  <div class="modal-content">
+    <span class="close-gerar">&times;</span>
+    <h3>Confirmação de segurança</h3>
+    <p>Digite a senha para gerar os dados:</p>
+    <input type="password" id="senha-input-gerar" placeholder="Senha">
+    <button id="confirmar-gerar">Confirmar</button>
+  </div>
+</div>
+
+  
+<h2>Esvaziar Tabela de HUs</h2>
+<button id="esvaziar-btn">Esvaziar Tabela</button>
+
+<div id="resposta"></div>
+
+<!-- Modal -->
+<div id="senha-modal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h3>Confirmação de segurança</h3>
+    <p>Digite a senha para confirmar a exclusão:</p>
+    <input type="password" id="senha-input" placeholder="Senha">
+    <button id="confirmar-esvaziar">Confirmar</button>
+  </div>
+</div>
