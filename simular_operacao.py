@@ -5,21 +5,18 @@ import mysql.connector
 from datetime import datetime, timedelta
 from canalizacoes import canalizacoes
 from dotenv import load_dotenv
-from pathlib import Path
 
 
-
-env_path = Path(__file__).resolve().parents[2] / '.env'
-load_dotenv(dotenv_path=env_path)
+load_dotenv()
 
 
 # Definindo a conexão cocm o banco de dados
 conexao = mysql.connector.connect(
-    host=os.getenv("DB_HOST"),  # Valor padrão: localhost
-    user=os.getenv("DB_USER"),       # Valor padrão: davi
+    host=os.getenv("DB_HOST"),
+    user=os.getenv("DB_USER"),      
     password=os.getenv("DB_PASSWORD"),
     database=os.getenv("DB_NAME"),
-    port=int(os.getenv("DB_PORT"))     # Convertendo para inteiro
+    port=int(os.getenv("DB_PORT"))    
 )
 
 # Cursos para executar comandos sql
