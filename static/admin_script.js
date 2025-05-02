@@ -13,27 +13,33 @@ function configurarModal(modal, closeBtn) {
   });
 }
 
-function enviarRequisicao(url, senha, mensagemProcessando, mensagemSucesso, mensagemErro) {
-  document.getElementById('resposta').innerHTML = mensagemProcessando;
-
-  fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ senha: senha })
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (data.erro) {
-        document.getElementById('resposta').innerHTML = "Erro: " + data.erro;
-      } else {
-        document.getElementById('resposta').innerHTML = mensagemSucesso;
+fetch(url, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ senha: senha })
+})
+  .then(response => {
+    return response.text().then(text => {
+      console.log("Resposta bruta:", text);
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        throw new Error("Não foi possível fazer parse do JSON: " + e + "\nResposta recebida:\n" + text);
       }
-    })
-    .catch(error => {
-      document.getElementById('resposta').innerHTML = mensagemErro;
-      console.error("Erro:", error);
     });
-}
+  })
+  .then(data => {
+    if (data.erro) {
+      document.getElementById('resposta').innerHTML = "Erro: " + data.erro;
+    } else {
+      document.getElementById('resposta').innerHTML = mensagemSucesso;
+    }
+  })
+  .catch(error => {
+    document.getElementById('resposta').innerHTML = mensagemErro;
+    console.error("Erro:", error);
+  });
+
 
 // Geração de dados
 const gerarBtn = document.getElementById('gerar-dados-btn');
