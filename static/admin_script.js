@@ -42,7 +42,8 @@ function enviarRequisicao(url, senha, mensagemProcessando, mensagemSucesso, mens
       document.getElementById('resposta').innerHTML = mensagemErro;
       console.error("Erro:", error);
     });
-  }  
+  
+}
 
 // Geração de dados
 const gerarBtn = document.getElementById('gerar-dados-btn');
