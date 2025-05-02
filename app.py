@@ -10,6 +10,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+
 # senha da aplicação
 SENHA = os.getenv('SENHA')
 
@@ -54,4 +55,4 @@ def esvaziar():
         return jsonify({'erro': f'Erro ao executar script: {str(e)}'}), 500
 
 if __name__ == '__main__':
-    app.run(port=5000)
+    app.run(port=5000, debug=True)
