@@ -4,14 +4,26 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Definindo a conexão cocm o banco de dados
-db = mysql.connector.connect(
+# Banco de dados servidor (teste no servidor)
+db_server = mysql.connector.connect(
     host=os.getenv("DB_HOST"),
     user=os.getenv("DB_USER"),      
     password=os.getenv("DB_PASSWORD"),
     database=os.getenv("DB_NAME"),
     port=int(os.getenv("DB_PORT"))    
 )
+
+
+# Banco de dados local (para testes de operações sql)
+db_local = mysql.connector.connect(
+    host=os.getenv("LOCAL_HOST"),
+    user=os.getenv("LOCAL_USER"),      
+    password=os.getenv("LOCAL_PASSWORD"),
+    database=os.getenv("LOCAL_NAME"), 
+)
+
+# Definindo que banco vamos usar
+db = db_local
 
 # Cursos para executar comandos sql
 cursor = db.cursor()
