@@ -1,9 +1,8 @@
 import random
-import mysql.connector
 from datetime import timedelta
 from canalizacoes import canalizacoes
-from geradores import gerar_hu, gerar_pedido, escolher_canalizacao, escolher_etd 
-from db import db
+from geradores import gerar_hu, gerar_pedido, gerar_aging, escolher_canalizacao, escolher_etd, escolher_rampa 
+from db_utils import db, executar_sql
 
 
 # Cursos para executar comandos sql
@@ -20,38 +19,6 @@ hu_limites = {} # Gerencia o limite de pedidos que podem ser atrelados em uma hu
 hu_datas = {} # Gerencia data_criacao e data_final de cada hu
 
 hu_canalizacoes = {} # Gerencia em qual canalização a hu foi criada
-
-
-# Por aqui podemos controlar a quantidade de desvios da simulação
-def gerar_aging():
-    chance = random.random()  # Gera número entre 0.0 e 1.0
-    if chance < 0.99:
-        return round(random.uniform(1.0, 4.0), 2)
-    else:
-        return round(random.uniform(5.0, 10.0), 2)
-
-
-# Função para executar comandos SQL sem perder a conexão (necessária pelo ambiente azure)
-def executar_sql(query, valores=None, fetch=False):
-    try:
-        # Refaz a conexão com o banco de dados
-        db.ping(reconnect=True)
-
-        # Executa o comando
-        if valores:
-            cursor.execute(query, valores)
-        else:
-            cursor.execute(query)
-
-        # Executa a query SQL e retorna o resultado. Se `fetch` for "all", retorna todas as linhas; caso contrário, retorna a próxima linha. 
-        # Se `fetch` for False ou None, não retorna nada.
-        if fetch:
-            return cursor.fetchall() if fetch == "all" else cursor.fetchone()
-        
-    # tratamento de erro
-    except mysql.connector.Error as err:
-        print(f"[ERRO MySQL] {err}")
-        raise
 
 
 # Gerenciando HUs
@@ -149,7 +116,7 @@ def simular():
             aging = gerar_aging()
             canalizacao = escolher_canalizacao()
             etd, hora = escolher_etd(canalizacao)
-            rampa = random.choice(canalizacoes[canalizacao]["rampas"])
+            rampa = escolher_rampa(canalizacao)
             hu = hu_ativas.get(canalizacao)
 
 
