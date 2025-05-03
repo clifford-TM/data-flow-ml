@@ -2,7 +2,7 @@ import random
 from datetime import timedelta
 from geradores import gerar_pedido, gerar_aging, escolher_canalizacao, escolher_etd, escolher_rampa 
 from db_utils import db, cursor, executar_sql
-from gerenciador_pacotes import hu_ativas, hu_datas, hu_limites, hu_pedidos_count, criar_nova_hu, atrelar_pedido, desviar_pedido, atualizar_pacotes
+from gerenciador_pacotes import hus, obter_hu, criar_nova_hu, atrelar_pedido, desviar_pedido, atualizar_pacotes
 
 
 def simular():
@@ -12,11 +12,17 @@ def simular():
             if data_final is None:
                 data_final = data_criacao + timedelta(hours=1)
 
-            hu_ativas[canalizacao] = hu
-            hu_datas[hu] = (data_criacao, data_final)
             count = executar_sql("SELECT COUNT(*) FROM hu_pedidos WHERE hu = %s", (hu,), fetch=True)[0]
-            hu_pedidos_count[hu] = count
-            hu_limites[hu] = random.randint(80, 130)
+            limite = random.randint(80, 130)
+
+            hus[hu] = {
+                "canalizacao": canalizacao,
+                "status": status,
+                "pedidos_count": count,
+                "limite": limite,
+                "data_criacao": data_criacao,
+                "data_final": data_final
+            }
 
         pedidos_gerados = 0
         total_pedidos = 500
@@ -27,20 +33,17 @@ def simular():
             canalizacao = escolher_canalizacao()
             etd, hora = escolher_etd(canalizacao)
             rampa = escolher_rampa(canalizacao)
-            hu = hu_ativas.get(canalizacao)
+            hu = obter_hu(canalizacao)
 
 
             # Se não houver cointainer ou ele estiver cheio
-            if not hu or hu_pedidos_count[hu] >= hu_limites[hu]:
+            if not hu or hus[hu]["pedidos_count"] >= hus[hu]["limite"]:
                 hu = criar_nova_hu(canalizacao, etd)
-                data_criacao, data_final = executar_sql(
-                    "SELECT data_criacao, data_final FROM hus WHERE hu = %s", (hu,), fetch=True
-                )
-                hu_datas[hu] = (data_criacao, data_final)
-                hu_ativas[canalizacao] = hu
-                hu_pedidos_count[hu] = 0
+            
+                data_criacao = hus[hu]["data_criacao"]
+                data_final =  hus[hu]["data_final"] 
 
-            data_criacao, data_final = hu_datas[hu]
+
 
             delta = int((data_final - data_criacao).total_seconds())
             segundos_random = random.randint(0, max(10, delta - 100))
@@ -57,7 +60,7 @@ def simular():
 
                 # Atualizar a contagem de pacotes
                 atualizar_pacotes(hu)
-                hu_pedidos_count[hu] += 1
+                hus[hu]["pedidos_count"] += 1
 
             status = "atrelado" if aging < 5 else "desviado"
             print(f"Pedido: {pedido}, Canalização: {canalizacao}, HU: {hu}, Status: {status}")

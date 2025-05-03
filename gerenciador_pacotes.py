@@ -4,21 +4,16 @@ from db_utils import db, executar_sql
 from geradores import gerar_hu
 from canalizacoes import canalizacoes
 
-# Dicionários para gerenciamento de HUs
+# Dicionário para gerenciamento de HUs 
+hus = {}
 
-hu_ativas = {} # Gerencia hus com status "Aberto"
-
-hu_pedidos_count = {} # Gerencia a quantidade de pedidos associada a cada hu
-
-hu_limites = {} # Gerencia o limite de pedidos que podem ser atrelados em uma hu
-
-hu_datas = {} # Gerencia data_criacao e data_final de cada hu
-
-hu_canalizacoes = {} # Gerencia em qual canalização a hu foi criada
+# Obtem a próxima Hu dos iterável hus em que o status esteja aberto para uma canalização informada
+def obter_hu(canalizacao):
+    return next((hu for hu, dados in hus.items() if dados["canalizacao"] == canalizacao and dados["status"] == "Aberto"), None)
 
 # Gerenciando HUs
 def criar_nova_hu(canalizacao, etd):
-    hu_antiga = hu_ativas.get(canalizacao)
+    hu_antiga = obter_hu(canalizacao)
     horas = random.randint(1, 4)
     minutos = random.choice([10, 15, 30])
     data_criacao = etd - timedelta(hours=horas, minutes=minutos)
@@ -26,11 +21,13 @@ def criar_nova_hu(canalizacao, etd):
     duracao = random.randint(20 * 60, int(tempo_estimado))
     data_final = data_criacao + timedelta(seconds=duracao)
 
-    if hu_antiga and hu_antiga in hu_datas:
-        data_final_antiga = hu_datas[hu_antiga][1]
+    if hu_antiga:
+        hus[hu_antiga]["status"] = "Finalizado"
+        hus[hu_antiga]["data_final"] = data_final
+
         executar_sql(
             "UPDATE hus SET status = %s, data_final = %s WHERE hu = %s",
-            ("Finalizado", data_final_antiga, hu_antiga)
+            ("Finalizado", data_final, hu_antiga)
         )
         db.commit()
 
@@ -38,17 +35,20 @@ def criar_nova_hu(canalizacao, etd):
     posicao = random.choice(canalizacoes[canalizacao]["rampas"])
     limite_pedidos = random.randint(80, 130)
 
+    hus[nova_hu] = {
+        "canalizacao": canalizacao,
+        "status": "Aberto",
+        "pedidos_count": 0,
+        "limite": limite_pedidos,
+        "data_criacao": data_criacao,
+        "data_final": data_final
+    }
+
     executar_sql(
         "INSERT INTO hus (hu, status, etd, pacotes, canalizacao, posicao, data_criacao, data_final) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
         (nova_hu, "Aberto", etd, 0, canalizacao, posicao, data_criacao, data_final)
     )
     db.commit()
-
-    hu_ativas[canalizacao] = nova_hu
-    hu_canalizacoes[nova_hu] = canalizacao
-    hu_pedidos_count[nova_hu] = 0
-    hu_limites[nova_hu] = limite_pedidos
-    hu_datas[nova_hu] = (data_criacao, data_final)
 
     return nova_hu
 
