@@ -31,3 +31,4 @@ def escolher_etd(canalizacao):
 def escolher_rampa(canalizacao):
     rampa = random.choice(canalizacoes[canalizacao]["rampas"])
     return rampa
+
