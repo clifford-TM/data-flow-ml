@@ -1,34 +1,13 @@
-import os
 import random
 import string
 import mysql.connector
 from datetime import datetime, timedelta
 from canalizacoes import canalizacoes
-from dotenv import load_dotenv
-
-
-load_dotenv()
-
-
-# Definindo a conexão cocm o banco de dados
-conexao = mysql.connector.connect(
-    host=os.getenv("DB_HOST"),
-    user=os.getenv("DB_USER"),      
-    password=os.getenv("DB_PASSWORD"),
-    database=os.getenv("DB_NAME"),
-    port=int(os.getenv("DB_PORT"))    
-)
-
-print("Tentando conectar com os seguintes dados:")
-print("HOST:", os.getenv("DB_HOST"))
-print("USER:", os.getenv("DB_USER"))
-print("PASSWORD:", os.getenv("DB_PASSWORD"))
-print("DB:", os.getenv("DB_NAME"))
-print("PORT:", os.getenv("DB_PORT"))
+from db import db
 
 
 # Cursos para executar comandos sql
-cursor = conexao.cursor()
+cursor = db.cursor()
 
 # Dicionários para gerenciamento de HUs
 
@@ -70,46 +49,56 @@ def escolher_etd(canalizacao):
     return etd, hora_escolhida
 
 
+# Função para executar comandos SQL sem perder a conexão (necessária pelo ambiente azure)
+def executar_sql(query, valores=None, fetch=False):
+    try:
+        # Refaz a conexão com o banco de dados
+        db.ping(reconnect=True)
+
+        # Executa o comando
+        if valores:
+            cursor.execute(query, valores)
+        else:
+            cursor.execute(query)
+
+        # Executa a query SQL e retorna o resultado. Se `fetch` for "all", retorna todas as linhas; caso contrário, retorna a próxima linha. 
+        # Se `fetch` for False ou None, não retorna nada.
+        if fetch:
+            return cursor.fetchall() if fetch == "all" else cursor.fetchone()
+        
+    # tratamento de erro
+    except mysql.connector.Error as err:
+        print(f"[ERRO MySQL] {err}")
+        raise
+
+
 # Gerenciando HUs
 def criar_nova_hu(canalizacao, etd):
     hu_antiga = hu_ativas.get(canalizacao)
-
-    # A hu deve começar entre 1h30 e 5h antes do ETD
     horas = random.randint(1, 4)
     minutos = random.choice([10, 15, 30])
     data_criacao = etd - timedelta(hours=horas, minutes=minutos)
-
-    # Calculando data_final
     tempo_estimado = (etd - data_criacao).total_seconds()
     duracao = random.randint(20 * 60, int(tempo_estimado))
     data_final = data_criacao + timedelta(seconds=duracao)
 
-   
-
     if hu_antiga and hu_antiga in hu_datas:
-        data_criacao_antiga = hu_datas[hu_antiga][0]
         data_final_antiga = hu_datas[hu_antiga][1]
-
-        print(f"HU: {hu_antiga}, data_criacao: {data_criacao_antiga}, data_final: {data_final_antiga}")
-
-        cursor.execute(
+        executar_sql(
             "UPDATE hus SET status = %s, data_final = %s WHERE hu = %s",
             ("Finalizado", data_final_antiga, hu_antiga)
         )
-        conexao.commit()
+        db.commit()
 
     nova_hu = gerar_hu()
     posicao = random.choice(canalizacoes[canalizacao]["rampas"])
     limite_pedidos = random.randint(80, 130)
 
-
-    
-
-    cursor.execute(
+    executar_sql(
         "INSERT INTO hus (hu, status, etd, pacotes, canalizacao, posicao, data_criacao, data_final) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
         (nova_hu, "Aberto", etd, 0, canalizacao, posicao, data_criacao, data_final)
     )
-    conexao.commit()
+    db.commit()
 
     hu_ativas[canalizacao] = nova_hu
     hu_canalizacoes[nova_hu] = canalizacao
@@ -117,111 +106,103 @@ def criar_nova_hu(canalizacao, etd):
     hu_limites[nova_hu] = limite_pedidos
     hu_datas[nova_hu] = (data_criacao, data_final)
 
-
     return nova_hu
+
+
+
+def atrelar_pedido(pedido, hu, etd, canalizacao, aging, atrelamento, rampa, hora):
+    # Inserindo pedidos na tabela pedidos
+    executar_sql(
+        "INSERT INTO pedidos (pedido, etd, canalizacao, aging, atrelamento, desvio, hr, rampa, hora) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        (pedido, etd, canalizacao, str(aging), atrelamento, None, hora, rampa, hora.hour)
+    )
+
+    # Atualizando a tabela relacional hu_pedidos
+    executar_sql(
+        "INSERT INTO hu_pedidos (hu, pedido, data_atrelamento) VALUES (%s, %s, %s)",
+        (hu, pedido, atrelamento)
+    )
+
+def desviar_pedido(pedido, etd, canalizacao, aging, desvio, rampa, hora):
+    # O desvio será contabilizado porém não atrelado
+    executar_sql(
+        "INSERT INTO pedidos (pedido, etd, canalizacao, aging, atrelamento, desvio, hr, rampa, hora) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+        (pedido, etd, canalizacao, str(aging), None, desvio, hora, rampa, hora.hour)
+    )
+
+def atualizar_pacotes(hu):
+    executar_sql(
+        """
+        UPDATE hus
+        SET pacotes = (
+            SELECT COUNT(*)
+            FROM hu_pedidos
+            WHERE hu = %s
+        )
+        WHERE hu = %s
+        """,
+        (hu, hu)
+                )
 
 
 def simular():
     try:
-        # Carregando HUs abertas no banco de dados
-        cursor.execute("SELECT hu, canalizacao, data_criacao, data_final FROM hus WHERE status = 'Aberto'")
-        hus_abertas = cursor.fetchall()
-
+        hus_abertas = executar_sql("SELECT hu, canalizacao, data_criacao, data_final FROM hus WHERE status = 'Aberto'", fetch="all")
         for hu, canalizacao, data_criacao, data_final in hus_abertas:
             if data_final is None:
                 data_final = data_criacao + timedelta(hours=1)
-            
+
             hu_ativas[canalizacao] = hu
             hu_datas[hu] = (data_criacao, data_final)
-
-            # Carrega a contagem atual de pedidos da HU
-            cursor.execute("SELECT COUNT(*) FROM hu_pedidos WHERE hu = %s", (hu,))
-            count = cursor.fetchone()[0]
+            count = executar_sql("SELECT COUNT(*) FROM hu_pedidos WHERE hu = %s", (hu,), fetch=True)[0]
             hu_pedidos_count[hu] = count
-
-            # Define um novo limite aleatório
             hu_limites[hu] = random.randint(80, 130)
 
         pedidos_gerados = 0
-        total_pedidos = 1000
-        pedidos_processados = []
+        total_pedidos = 20
 
         while pedidos_gerados < total_pedidos:
             pedido = gerar_pedido()
             aging = gerar_aging()
             canalizacao = escolher_canalizacao()
             etd, hora = escolher_etd(canalizacao)
-            desvio = None
             rampa = random.choice(canalizacoes[canalizacao]["rampas"])
-
             hu = hu_ativas.get(canalizacao)
 
-            # Se não houver HU ativa ou ela estiver cheia, criamos uma nova HU
             if not hu or hu_pedidos_count[hu] >= hu_limites[hu]:
                 hu = criar_nova_hu(canalizacao, etd)
-
-                # Recarrega datas da nova HU
-                cursor.execute("SELECT data_criacao, data_final FROM hus WHERE hu = %s", (hu,))
-                data_criacao, data_final = cursor.fetchone()
+                data_criacao, data_final = executar_sql(
+                    "SELECT data_criacao, data_final FROM hus WHERE hu = %s", (hu,), fetch=True
+                )
                 hu_datas[hu] = (data_criacao, data_final)
                 hu_ativas[canalizacao] = hu
                 hu_pedidos_count[hu] = 0
 
             data_criacao, data_final = hu_datas[hu]
 
+            delta = int((data_final - data_criacao).total_seconds())
+            segundos_random = random.randint(0, max(10, delta - 100))
+
             if aging >= 5:
-                # DESVIO dentro da HU
-                delta = int((data_final - data_criacao).total_seconds())
-                segundos_random = random.randint(0, max(10, delta - 100))
-                desvio = data_criacao + timedelta(seconds=segundos_random)
+                data_desvio = data_criacao + timedelta(seconds=segundos_random)
+                desviar_pedido(pedido, etd, canalizacao, aging, data_desvio, rampa, hora)
 
-                cursor.execute(
-                    "INSERT INTO pedidos (pedido, etd, canalizacao, aging, atrelamento, desvio, hr, rampa, hora) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (pedido, etd, canalizacao, str(aging), None, desvio, hora, rampa, hora.hour)
-                )
 
-                pedidos_processados.append(f"{pedido} (desviado, aging {aging})")
             else:
-                # ATRELAMENTO dentro da HU
-                delta = int((data_final - data_criacao).total_seconds())
-                segundos_random = random.randint(0, max(10, delta - 100))
                 data_atrelamento = data_criacao + timedelta(seconds=segundos_random)
+                atrelar_pedido(pedido, hu, etd, canalizacao, aging, data_atrelamento, rampa, hora)
 
-                cursor.execute(
-                    "INSERT INTO pedidos (pedido, etd, canalizacao, aging, atrelamento, desvio, hr, rampa, hora) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (pedido, etd, canalizacao, str(aging), data_atrelamento, None, hora, rampa, hora.hour)
-                )
-
-                cursor.execute(
-                    "INSERT INTO hu_pedidos (hu, pedido, data_atrelamento) VALUES (%s, %s, %s)",
-                    (hu, pedido, data_atrelamento)
-                )
-
-                cursor.execute(
-                    """
-                    UPDATE hus
-                    SET pacotes = (
-                        SELECT COUNT(*)
-                        FROM hu_pedidos
-                        WHERE hu = %s
-                    )
-                    WHERE hu = %s
-                    """,
-                    (hu, hu)
-                )
-
+                # Atualizar a contagem de pacotes
+                atualizar_pacotes(hu)
                 hu_pedidos_count[hu] += 1
-                pedidos_processados.append(f"{pedido} → HU {hu} (canalização {canalizacao})")
 
             status = "atrelado" if aging < 5 else "desviado"
             print(f"Pedido: {pedido}, Canalização: {canalizacao}, HU: {hu}, Status: {status}")
             pedidos_gerados += 1
 
-        conexao.commit()
+        db.commit()
         print(f"{pedidos_gerados} pedidos processados.")
 
-    except KeyboardInterrupt:
-        print("\nSimulação encerrada manualmente.")
     finally:
         cursor.close()
-        conexao.close()
+        db.close()
