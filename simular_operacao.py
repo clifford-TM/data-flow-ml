@@ -1,8 +1,8 @@
 import random
-import string
 import mysql.connector
-from datetime import datetime, timedelta
+from datetime import timedelta
 from canalizacoes import canalizacoes
+from geradores import gerar_hu, gerar_pedido, escolher_canalizacao, escolher_etd 
 from db import db
 
 
@@ -29,24 +29,6 @@ def gerar_aging():
         return round(random.uniform(1.0, 4.0), 2)
     else:
         return round(random.uniform(5.0, 10.0), 2)
-
-
-# Parametros de construção de pedidos e HU
-def gerar_pedido():
-    return ''.join(random.choices(string.digits, k=11))
-
-def gerar_hu():
-    return ''.join(random.choices(string.digits, k=20))
-
-def escolher_canalizacao():
-    return random.choice(list(canalizacoes.keys()))
-
-def escolher_etd(canalizacao):
-    horarios = canalizacoes[canalizacao]["horarios"]
-    hora_escolhida = random.choice(horarios)
-    agora = datetime.now()
-    etd = datetime.combine(agora.date(), hora_escolhida)
-    return etd, hora_escolhida
 
 
 # Função para executar comandos SQL sem perder a conexão (necessária pelo ambiente azure)
