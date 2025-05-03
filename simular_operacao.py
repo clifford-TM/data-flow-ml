@@ -110,6 +110,7 @@ def criar_nova_hu(canalizacao, etd):
 
 
 
+# Criando pedidos, desvios e atualizando o banco
 def atrelar_pedido(pedido, hu, etd, canalizacao, aging, atrelamento, rampa, hora):
     # Inserindo pedidos na tabela pedidos
     executar_sql(
@@ -159,7 +160,7 @@ def simular():
             hu_limites[hu] = random.randint(80, 130)
 
         pedidos_gerados = 0
-        total_pedidos = 20
+        total_pedidos = 500
 
         while pedidos_gerados < total_pedidos:
             pedido = gerar_pedido()
@@ -169,6 +170,8 @@ def simular():
             rampa = random.choice(canalizacoes[canalizacao]["rampas"])
             hu = hu_ativas.get(canalizacao)
 
+
+            # Se não houver cointainer ou ele estiver cheio
             if not hu or hu_pedidos_count[hu] >= hu_limites[hu]:
                 hu = criar_nova_hu(canalizacao, etd)
                 data_criacao, data_final = executar_sql(
@@ -188,6 +191,7 @@ def simular():
                 desviar_pedido(pedido, etd, canalizacao, aging, data_desvio, rampa, hora)
 
 
+            # Caso haja uma HU que possa receber pedidos
             else:
                 data_atrelamento = data_criacao + timedelta(seconds=segundos_random)
                 atrelar_pedido(pedido, hu, etd, canalizacao, aging, data_atrelamento, rampa, hora)
