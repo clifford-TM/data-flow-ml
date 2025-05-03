@@ -19,6 +19,14 @@ conexao = mysql.connector.connect(
     port=int(os.getenv("DB_PORT"))    
 )
 
+print("Tentando conectar com os seguintes dados:")
+print("HOST:", os.getenv("DB_HOST"))
+print("USER:", os.getenv("DB_USER"))
+print("PASSWORD:", os.getenv("DB_PASSWORD"))
+print("DB:", os.getenv("DB_NAME"))
+print("PORT:", os.getenv("DB_PORT"))
+
+
 # Cursos para executar comandos sql
 cursor = conexao.cursor()
 
