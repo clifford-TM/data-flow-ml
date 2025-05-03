@@ -1,5 +1,5 @@
 import random
-import datetime
+from datetime import datetime
 import string
 from canalizacoes import canalizacoes
 

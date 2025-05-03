@@ -17,7 +17,7 @@ def simular():
 
             hus[hu] = {
                 "canalizacao": canalizacao,
-                "status": status,
+                "status": "Aberta",
                 "pedidos_count": count,
                 "limite": limite,
                 "data_criacao": data_criacao,
