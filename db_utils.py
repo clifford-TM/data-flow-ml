@@ -23,8 +23,7 @@ elif db_env == "local":
         password=os.getenv("LOCAL_PASSWORD"),
         database=os.getenv("LOCAL_NAME"), 
     )
-
-# Definindo que banco vamos usar
+    
 
 # Cursos para executar comandos sql
 cursor = db.cursor()
