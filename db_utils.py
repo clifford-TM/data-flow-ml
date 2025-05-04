@@ -23,7 +23,7 @@ db_local = mysql.connector.connect(
 )
 
 # Definindo que banco vamos usar
-db = db_local
+db = db_server
 
 # Cursos para executar comandos sql
 cursor = db.cursor()
