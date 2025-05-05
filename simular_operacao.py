@@ -2,17 +2,17 @@ import random
 import time
 from datetime import timedelta
 from geradores import gerar_pedido, gerar_aging, escolher_canalizacao, escolher_etd, escolher_rampa 
-from db_utils import db, cursor, execucao_imediata, executar_batch
+from db_utils import db, cursor, executar_sql
 from gerenciador_pacotes import hus, obter_hu, criar_nova_hu, atrelar_pedido, desviar_pedido, atualizar_pacotes
 
 
 def gerenciar_hus():
-    hus_abertas = execucao_imediata("SELECT hu, canalizacao, data_criacao, data_final FROM hus WHERE status = 'Aberto'", fetch="all")
+    hus_abertas = executar_sql("SELECT hu, canalizacao, data_criacao, data_final FROM hus WHERE status = 'Aberto'", fetch="all")
     for hu, canalizacao, data_criacao, data_final in hus_abertas:
         if data_final is None:
             data_final = data_criacao + timedelta(hours=1)
 
-        count = execucao_imediata("SELECT COUNT(*) FROM hu_pedidos WHERE hu = %s", (hu,), fetch=True)[0]
+        count = executar_sql("SELECT COUNT(*) FROM hu_pedidos WHERE hu = %s", (hu,), fetch=True)[0]
         limite = random.randint(80, 130)
 
         hus[hu] = {
@@ -76,7 +76,7 @@ def simular():
 
             pedidos_gerados += 1
 
-        executar_batch()
+        db.commit()
         print(f"{pedidos_gerados} pedidos processados.")
 
     finally:

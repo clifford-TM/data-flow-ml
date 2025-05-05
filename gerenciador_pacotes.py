@@ -29,6 +29,7 @@ def criar_nova_hu(canalizacao, etd):
             "UPDATE hus SET status = %s, data_final = %s WHERE hu = %s",
             ("Finalizado", data_final, hu_antiga)
         )
+        db.commit()
 
     nova_hu = gerar_hu()
     posicao = random.choice(canalizacoes[canalizacao]["rampas"])
@@ -47,6 +48,7 @@ def criar_nova_hu(canalizacao, etd):
         "INSERT INTO hus (hu, status, etd, pacotes, canalizacao, posicao, data_criacao, data_final) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
         (nova_hu, "Aberto", etd, 0, canalizacao, posicao, data_criacao, data_final)
     )
+    db.commit()
 
     return nova_hu
 
