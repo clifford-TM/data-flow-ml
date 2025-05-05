@@ -67,7 +67,7 @@ def simular():
         gerenciar_hus()
 
         pedidos_gerados = 0
-        total_pedidos = 100
+        total_pedidos = 500
 
         while pedidos_gerados < total_pedidos:
             pedidos_info = gerar_simulacao()
