@@ -14,7 +14,13 @@ function configurarModal(modal, closeBtn) {
 }
 
 function enviarRequisicao(url, senha, mensagemProcessando, mensagemSucesso, mensagemErro) {
-  document.getElementById('resposta').innerHTML = mensagemProcessando;
+  const respostaEl = document.getElementById('resposta');
+  const botoes = document.querySelectorAll('button');
+
+  // Desativa todos os botões temporariamente
+  botoes.forEach(btn => btn.disabled = true);
+
+  respostaEl.innerHTML = mensagemProcessando;
 
   fetch(url, {
     method: 'POST',
@@ -33,16 +39,27 @@ function enviarRequisicao(url, senha, mensagemProcessando, mensagemSucesso, mens
     })
     .then(data => {
       if (data.erro) {
-        document.getElementById('resposta').innerHTML = "Erro: " + data.erro;
+        respostaEl.innerHTML = "Erro: " + data.erro + criarBotaoTentarNovamente(url, senha, mensagemProcessando, mensagemSucesso, mensagemErro);
       } else {
-        document.getElementById('resposta').innerHTML = mensagemSucesso;
+        respostaEl.innerHTML = mensagemSucesso;
       }
     })
     .catch(error => {
-      document.getElementById('resposta').innerHTML = mensagemErro;
+      respostaEl.innerHTML = mensagemErro + criarBotaoTentarNovamente(url, senha, mensagemProcessando, mensagemSucesso, mensagemErro);
       console.error("Erro:", error);
+    })
+    .finally(() => {
+      // Reativa os botões depois da requisição
+      botoes.forEach(btn => btn.disabled = false);
     });
-  
+}
+
+function criarBotaoTentarNovamente(url, senha, mensagemProcessando, mensagemSucesso, mensagemErro) {
+  return `
+    <br><button onclick="enviarRequisicao('${url}', '${senha}', '${mensagemProcessando}', '${mensagemSucesso}', '${mensagemErro}')">
+      Tentar novamente
+    </button>
+  `;
 }
 
 // Geração de dados
