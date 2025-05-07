@@ -2,9 +2,10 @@ import random
 import time
 from datetime import timedelta
 from geradores import gerar_pedido, gerar_aging, escolher_canalizacao, escolher_etd, escolher_rampa 
-from db_utils import db, cursor, executar_sql
+from db_utils import db, executar_sql
 from gerenciador_pacotes import hus, obter_hu, criar_nova_hu, atrelar_pedido, desviar_pedido, atualizar_pacotes
 
+cursor = db.cursor()
 
 def gerenciar_hus():
     hus_abertas = executar_sql("SELECT hu, canalizacao, data_criacao, data_final FROM hus WHERE status = 'Aberto'", fetch="all")

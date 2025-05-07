@@ -1,9 +1,10 @@
 def zerar_tabelas():
-    from db_utils import db, cursor
-
+    from db_utils import db 
     # Tabelas
     tabelas = ['hu_pedidos', 'hus', 'pedidos']
     try:
+        db.ping(reconnect=True)
+        cursor = db.cursor()
         for tabela in tabelas:
             cursor.execute(f"DELETE FROM {tabela}")
             cursor.execute(f"ALTER TABLE {tabela} AUTO_INCREMENT = 1")
