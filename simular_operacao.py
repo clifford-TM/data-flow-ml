@@ -69,6 +69,7 @@ def simular():
 
         pedidos_gerados = 0
         total_pedidos = 1000
+        intervalo_commit = 100 # commit para o db a cada 100 pedidos
 
         while pedidos_gerados < total_pedidos:
             pedidos_info = gerar_simulacao()
@@ -76,6 +77,12 @@ def simular():
             respiro_blocos()
 
             pedidos_gerados += 1
+
+            # Para evitar o erro de timeout fazemos commits divididos usando a lógica de módulo %
+            # Esse cálculo verifica quando o mútiplo de intervalo foi atingido
+            if pedidos_gerados % intervalo_commit == 0:
+                db.commit()
+                print(f"Commit intermediário {pedidos_gerados} gerados.")
 
         db.commit()
         print(f"{pedidos_gerados} pedidos processados.")
