@@ -31,12 +31,13 @@ function enviarRequisicao(url, senha, mensagemProcessando, mensagemSucesso, mens
       return response.text().then(text => {
         console.log("Resposta bruta:", text);
         if (!response.ok){
+          throw new Error(`Erro HTTP ${response.status}: ${text}`);
+        }
         try {
           return JSON.parse(text);
         } catch (e) {
           throw new Error("Não foi possível fazer parse do JSON: " + e + "\nResposta recebida:\n" + text);
         }
-      }
       });
     })
     .then(data => {
