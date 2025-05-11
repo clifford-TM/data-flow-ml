@@ -54,9 +54,7 @@ def processar_dados(pedido, aging, canalizacao, etd, hora, rampa, hu):
         atrelar_pedido(pedido, hu, etd, canalizacao, aging, data_atrelamento, rampa, hora)
         atualizar_pacotes(hu)
         hus[hu]["pedidos_count"] += 1
-        status = "atrelado"
 
-    print(f"Pedido: {pedido}, Canalização: {canalizacao}, HU: {hu}, Status: {status}")
     return hu
 
 # Função para refatorar e não esgotar os recursos
@@ -74,7 +72,7 @@ def simular():
         while pedidos_gerados < total_pedidos:
             pedidos_info = gerar_simulacao()
             processar_dados(*pedidos_info)
-            respiro_blocos()
+            #respiro_blocos()
 
             pedidos_gerados += 1
 

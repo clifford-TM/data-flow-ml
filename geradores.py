@@ -6,7 +6,7 @@ from canalizacoes import canalizacoes
 # Por aqui podemos controlar a quantidade de desvios da simulação
 def gerar_aging():
     chance = random.random()  # Gera número entre 0.0 e 1.0
-    if chance < 0.94:
+    if chance < 0.98:
         return round(random.uniform(1.0, 4.0), 2)
     else:
         return round(random.uniform(5.0, 10.0), 2)
