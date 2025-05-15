@@ -66,7 +66,7 @@ def simular():
         gerenciar_hus()
 
         pedidos_gerados = 0
-        total_pedidos = 1000
+        total_pedidos = 700
         intervalo_commit = 100 # commit para o db a cada 100 pedidos
 
         while pedidos_gerados < total_pedidos:
